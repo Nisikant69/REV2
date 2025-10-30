@@ -17,10 +17,34 @@ from backend.validators import (
     ValidationError,
 )
 from backend.rate_limiter import get_rate_limiter
+from backend.database import init_db
+from backend.health import router as health_router
 
-app = FastAPI()
+app = FastAPI(title="REV2 - AI Code Reviewer")
 logger = get_logger(__name__)
 rate_limiter = get_rate_limiter()
+
+# Include health check routes
+app.include_router(health_router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database and system on startup."""
+    try:
+        logger.info("Initializing database...")
+        init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.critical(f"Failed to initialize database: {str(e)}", exc_info=True)
+        raise
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown."""
+    logger.info("Shutting down REV2...")
+    # Flush logs, close connections, etc.
 
 
 @app.post("/api/webhook")
