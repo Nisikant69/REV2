@@ -4,9 +4,8 @@ Implements per-installation rate limiting to prevent abuse.
 """
 
 import time
-from typing import Dict, Tuple
-from backend.config import int(os.getenv("RATE_LIMIT_REVIEWS_PER_HOUR", 100))
 import os
+from typing import Dict, Tuple, Any
 
 
 class RateLimiter:
