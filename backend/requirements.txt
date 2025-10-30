@@ -5,3 +5,29 @@ requests
 python-dotenv
 PyGithub
 google-generativeai
+
+# Database
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+
+# Testing
+pytest>=7.0
+pytest-cov>=4.0
+pytest-asyncio>=0.20
+pytest-mock>=3.10
+
+# Monitoring & Metrics
+prometheus-client>=0.15
+
+# Validation
+pydantic>=2.0
+
+# Task Scheduling (for cache cleanup)
+apscheduler>=3.10
+
+# API Documentation
+python-multipart>=0.0.5
+
+# Multi-model LLM support
+anthropic>=0.7
+openai>=1.0

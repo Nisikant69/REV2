@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rev2-app
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://rev2_user:rev2_password@db:5432/rev2
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - RATE_LIMIT_REVIEWS_PER_HOUR=100
+      - MAX_DIFF_SIZE=15000
+      - MAX_FILE_SIZE=8000
+      - CHUNK_SIZE=800
+      - CHUNK_OVERLAP=200
+      - TOP_K=5
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./backend:/app/backend
+      - ./config:/app/config
+    networks:
+      - rev2-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: rev2-db
+    environment:
+      - POSTGRES_USER=rev2_user
+      - POSTGRES_PASSWORD=rev2_password
+      - POSTGRES_DB=rev2
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rev2-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rev2_user -d rev2"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  rev2-network:
+    driver: bridge
