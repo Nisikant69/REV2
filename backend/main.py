@@ -1,6 +1,6 @@
 # main.py
 from fastapi import FastAPI, Request, HTTPException
-import hmac, hashlib, os, json, traceback
+import hmac, hashlib, os, json, traceback, uuid
 from github import Github, GithubException
 import requests
 
@@ -9,6 +9,14 @@ from backend.auth import get_installation_token
 from backend.repo_fetcher import save_repo_snapshot
 from backend.context_indexer import index_repo
 from backend.config import GITHUB_WEBHOOK_SECRET as WEBHOOK_SECRET, MAX_DIFF_SIZE
+from backend.logger import get_logger
+from backend.validators import (
+    validate_webhook_payload,
+    validate_patch,
+    sanitize_patch_for_llm,
+    ValidationError,
+)
+from backend.rate_limiter import get_rate_limiter
 
 app = FastAPI()
 
