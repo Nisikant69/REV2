@@ -104,7 +104,7 @@ class RateLimiter:
 
         return True, current_count + increment
 
-    def get_status(self, installation_id: str) -> Dict[str, any]:
+    def get_status(self, installation_id: str) -> Dict[str, Any]:
         """
         Get rate limit status for installation.
 
