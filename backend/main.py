@@ -19,13 +19,17 @@ from backend.validators import (
 from backend.rate_limiter import get_rate_limiter
 from backend.database import init_db
 from backend.health import router as health_router
+from backend.reviews import router as reviews_router
+from backend.feedback import router as feedback_router
 
 app = FastAPI(title="REV2 - AI Code Reviewer")
 logger = get_logger(__name__)
 rate_limiter = get_rate_limiter()
 
-# Include health check routes
+# Include routers
 app.include_router(health_router)
+app.include_router(reviews_router)
+app.include_router(feedback_router)
 
 
 @app.on_event("startup")
