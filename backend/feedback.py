@@ -5,99 +5,128 @@ User feedback collection and analytics for review quality improvement.
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from backend.database import get_db_session
 from backend.db_models import ReviewRecord, ReviewFeedback
 from backend.logger import get_logger
+from backend.auth import validate_api_key
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
-class FeedbackRequest:
+class FeedbackRequest(BaseModel):
     """Request model for feedback submission."""
+    rating: int = Field(..., ge=1, le=5, description="Rating from 1-5")
+    is_helpful: bool
+    comment: Optional[str] = Field(None, max_length=500, description="Optional feedback comment (max 500 chars)")
 
-    def __init__(self, rating: int, is_helpful: bool, comment: Optional[str] = None):
-        """
-        Initialize feedback request.
 
-        Args:
-            rating: Rating from 1-5
-            is_helpful: Whether the review was helpful
-            comment: Optional feedback comment
-        """
-        if not 1 <= rating <= 5:
-            raise ValueError("Rating must be between 1 and 5")
-
-        self.rating = rating
-        self.is_helpful = is_helpful
-        self.comment = comment
+class FeedbackResponse(BaseModel):
+    """Response model for feedback submission."""
+    feedback_id: str
+    created_at: str
+    updated_at: Optional[str] = None
 
 
 @router.post("/api/reviews/{review_id}/feedback")
 async def submit_feedback(
     review_id: str,
-    rating: int,
-    is_helpful: bool,
-    comment: Optional[str] = None,
+    feedback_request: FeedbackRequest,
+    authorization: Optional[str] = None,
     db: Session = Depends(get_db_session),
-):
+) -> dict:
     """
-    Submit feedback for a review.
+    Submit or update user feedback on a review.
 
-    Args:
+    Path Parameters:
         review_id: ID of the review
+
+    Request Body:
         rating: Rating from 1-5
         is_helpful: Whether review was helpful
-        comment: Optional feedback comment
+        comment: Optional feedback comment (max 500 chars)
+
+    Returns:
+        - 201 if new feedback created
+        - 200 if existing feedback updated
     """
     try:
+        # Validate API key if provided
+        if authorization:
+            validate_api_key(authorization)
+        else:
+            raise HTTPException(status_code=401, detail="Missing Authorization header")
+
         # Validate review exists
         review = db.query(ReviewRecord).filter_by(id=review_id).first()
         if not review:
-            raise HTTPException(status_code=404, detail="Review not found")
-
-        # Validate feedback
-        try:
-            feedback_request = FeedbackRequest(
-                rating=rating,
-                is_helpful=is_helpful,
-                comment=comment,
+            raise HTTPException(
+                status_code=404,
+                detail="Review not found",
+                headers={"code": "NOT_FOUND"}
             )
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
 
-        # Create feedback record
-        feedback = ReviewFeedback(
-            review_record_id=review_id,
-            rating=feedback_request.rating,
-            is_helpful=feedback_request.is_helpful,
-            comment=feedback_request.comment,
-        )
+        # Check if feedback already exists for this review
+        existing_feedback = db.query(ReviewFeedback).filter_by(review_record_id=review_id).first()
 
-        db.add(feedback)
-        db.commit()
+        if existing_feedback:
+            # Update existing feedback
+            existing_feedback.rating = feedback_request.rating
+            existing_feedback.is_helpful = feedback_request.is_helpful
+            existing_feedback.comment = feedback_request.comment
+            db.commit()
 
-        logger.info(
-            "Feedback submitted",
-            review_id=review_id,
-            rating=rating,
-            helpful=is_helpful,
-        )
+            logger.info(
+                "Feedback updated",
+                review_id=review_id,
+                rating=feedback_request.rating,
+                helpful=feedback_request.is_helpful,
+            )
 
-        return {
-            "status": "success",
-            "feedback_id": feedback.id,
-            "created_at": feedback.created_at.isoformat(),
-        }
+            return {
+                "feedback_id": existing_feedback.id,
+                "created_at": existing_feedback.created_at.isoformat() + "Z",
+                "updated_at": existing_feedback.updated_at.isoformat() + "Z" if hasattr(existing_feedback, 'updated_at') else None,
+                "status": "updated"
+            }
+        else:
+            # Create new feedback
+            feedback = ReviewFeedback(
+                review_record_id=review_id,
+                rating=feedback_request.rating,
+                is_helpful=feedback_request.is_helpful,
+                comment=feedback_request.comment,
+            )
+
+            db.add(feedback)
+            db.commit()
+
+            logger.info(
+                "Feedback submitted",
+                review_id=review_id,
+                rating=feedback_request.rating,
+                helpful=feedback_request.is_helpful,
+            )
+
+            return {
+                "feedback_id": feedback.id,
+                "created_at": feedback.created_at.isoformat() + "Z",
+                "status": "created"
+            }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to submit feedback: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to submit feedback")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to submit feedback",
+            headers={"code": "INTERNAL_ERROR"}
+        )
 
 
 @router.get("/api/reviews/{review_id}/feedback")
