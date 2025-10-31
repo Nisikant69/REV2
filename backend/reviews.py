@@ -469,7 +469,7 @@ async def get_analytics_summary(
 
 @router.get("/api/analytics/by-repo", response_model=AnalyticsByRepoResponse)
 async def get_analytics_by_repo(
-    authorization: Optional[str] = Depends(lambda: None),
+    authorization: Optional[str] = Header(None),
     date_from: Optional[str] = Query(None, description="ISO format date, filter reviews >= this date"),
     date_to: Optional[str] = Query(None, description="ISO format date, filter reviews <= this date"),
     db: Session = Depends(get_db_session),
