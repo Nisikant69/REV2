@@ -98,17 +98,6 @@ class AnalyticsByRepoResponse(BaseModel):
     data: List[RepoMetricsResponse]
 
 
-def get_authorization_header(authorization: Optional[str] = None) -> str:
-    """Dependency to validate authorization header."""
-    if not authorization:
-        raise HTTPException(
-            status_code=401,
-            detail="Missing Authorization header",
-        )
-    validate_api_key(authorization)
-    return authorization
-
-
 # Helper functions
 def normalize_status(status: str) -> str:
     """Convert database status (lowercase) to API format (uppercase)."""
