@@ -121,7 +121,7 @@ def parse_iso_date(date_str: Optional[str]) -> Optional[datetime]:
 
 @router.get("/api/reviews", response_model=ReviewListResponse)
 async def list_reviews(
-    authorization: Optional[str] = Depends(lambda: None),
+    authorization: Optional[str] = Header(None),
     repo_name: Optional[str] = Query(None, description="Filter by repo name (partial match, case-insensitive)"),
     status: Optional[str] = Query(None, description="Filter by status (SUCCESS, PARTIAL_FAILURE, FAILURE)"),
     date_from: Optional[str] = Query(None, description="ISO format date, filter reviews >= this date"),
