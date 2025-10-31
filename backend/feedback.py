@@ -36,7 +36,7 @@ class FeedbackResponse(BaseModel):
 async def submit_feedback(
     review_id: str,
     feedback_request: FeedbackRequest,
-    authorization: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session),
 ) -> dict:
     """
