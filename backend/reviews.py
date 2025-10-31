@@ -289,7 +289,7 @@ async def list_reviews(
 @router.get("/api/reviews/{review_id}", response_model=ReviewDetailResponse)
 async def get_review_detail(
     review_id: str,
-    authorization: Optional[str] = Depends(lambda: None),
+    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session),
 ):
     """
