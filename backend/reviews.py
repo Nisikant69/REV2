@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy import func, and_, or_
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from pydantic import BaseModel, Field
 
 from backend.database import get_db_session
