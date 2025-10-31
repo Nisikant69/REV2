@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 
 from backend.database import get_db_session
 from backend.db_models import ReviewRecord, ReviewFeedback
