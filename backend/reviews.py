@@ -384,7 +384,7 @@ async def get_review_detail(
 
 @router.get("/api/analytics/summary", response_model=AnalyticsSummaryResponse)
 async def get_analytics_summary(
-    authorization: Optional[str] = Depends(lambda: None),
+    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session),
 ):
     """
